@@ -21,8 +21,8 @@ def load_image(filename, im_size=217, border=5):
     """
 
     fd = FaceDetector()
-    fa = FaceAligner("neural_network\\data\\shape_predictor_68_face_landmarks.dat",
-                     "neural_network\\data\\face_template.npy")
+    fa = FaceAligner("neural_network\\data\\face_align_data\\shape_predictor_68_face_landmarks.dat",
+                     "neural_network\\data\\face_align_data\\face_template.npy")
 
     total_size = im_size + 2 * border
 
@@ -38,8 +38,8 @@ def load_image(filename, im_size=217, border=5):
     face = fa.align_face(img, faces[0], dim=im_size, border=border).reshape(1, total_size, total_size, 3)
     face /= 255.0
 
-    mean = np.load("neural_network\\data\\mean.npy")
-    std = np.load("neural_network\\data\\std.npy")
+    mean = np.load("neural_network\\data\\face_align_data\\mean.npy")
+    std = np.load("neural_network\\data\\face_align_data\\std.npy")
 
     face -= mean
     face /= std
