@@ -107,7 +107,7 @@ class Session:
 
         self.Username = username
         # Done self.PredictPhoto must contains vecotr<256> after calling CNN-method
-        self.dbManager.add_user(username, self.PredictPhoto)
+        self.dbManager.add_user(username, self.PredictPhoto.tolist())
         self.Answer = ServerResponder.success("Registration success")
 
     def check_photo(self):
@@ -119,8 +119,9 @@ class Session:
         if self.dbManager.exist(username):
             # Todo Sasha if biometric.auth(bio_parameter,self.dbManager.get_user(name)) :
             # review : self.dbMan return tuple => using [1] . its bad
+            user_photo = json.loads(self.dbManager.get_user(username))
             if self.classifier.compare(
-                    self.PredictPhoto, self.dbManager.get_user(username)[1]):
+                    self.PredictPhoto, user_photo):
 
                 self.AuthSuccess = True
                 self.Username = username

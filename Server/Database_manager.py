@@ -24,7 +24,7 @@ class DBManager:
 
     def get_user(self, username):
         if self.exist(username):
-            return self.dataBase.execute(f"SELECT * FROM {self.dataBaseName} "
+            return self.dataBase.execute(f"SELECT bio_parameter FROM {self.dataBaseName} "
                                          f"WHERE username = lower('{username}')").fetchone()
         else:
             return None
