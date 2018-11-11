@@ -1,6 +1,7 @@
 from cryptography.fernet import Fernet
 import socket, cv2, json, numpy as np
 import Crypto.PublicKey.RSA as RSA
+import colorama
 
 
 def encryption_sender_decorator_maker(key):
@@ -75,11 +76,14 @@ class Client:
     RavelPhotoFrame = None
     Shape = None
     user_id = 0
-
+    Username = None
+    AuthSuccess = False
     Answer = None
 
     def __init__(self):
         self.sock = socket.socket()
+        # Done add user-friendly output
+        colorama.init(autoreset=True)
 
     def start_session(self, ip='127.0.0.1', port=2019):
         self.sock.connect((ip, port))
@@ -87,13 +91,7 @@ class Client:
         self.recv = self.sock.recv
 
         ans = self.recv(1024).decode()
-        print(ans)
-        answer = json.loads(ans)
-
-        self.user_id = answer['Your new id']
-        print(self.user_id)
-
-        # print(answer['public_key'])
+        self.processing_respond(ans)
         session_key = Fernet.generate_key()
 
         self.send(ClientRequester.hello_ack_request(self.user_id, session_key).encode())
@@ -101,42 +99,38 @@ class Client:
         decorator = encryption_sender_decorator_maker(session_key)
         self.send, self.recv = decorator(self.send, self.recv)
 
-    def authentication(self, username, faceframe =None):
+    def authentication(self, username, faceframe=None):
         if faceframe:
             self.Shape = faceframe.shape
             self.RavelPhotoFrame = faceframe.ravel()
         else:
             self.get_face()
-        # Todo size input
+
         request = ClientRequester.authentication_request(
             self.user_id, username, len(self.RavelPhotoFrame), list(self.Shape))
 
         self.send(request)
-        while not self.load(self.RavelPhotoFrame):
-            pass
-        self.Answer = self.recv(1024)
+        self.load(self.RavelPhotoFrame)
+        self.processing_respond(self.recv(1024))
 
     def registration(self, username, faceframe=None):
-
         if faceframe:
             self.Shape = faceframe.shape
             self.RavelPhotoFrame = faceframe.ravel()
         else:
             self.get_face()
 
-        request = ClientRequester.registration_request(self.user_id, username, len(self.RavelPhotoFrame), list(self.Shape))
+        request = ClientRequester.registration_request(
+            self.user_id, username, len(self.RavelPhotoFrame), list(self.Shape))
+
         self.send(request)
-        while not self.load(self.RavelPhotoFrame):
-            pass
-        self.Answer = self.recv(1024)
+        self.load(self.RavelPhotoFrame)
+
+        self.processing_respond(self.recv(1024))
 
     def load(self, data):
         request = ClientRequester.load_data(self.user_id, bytes(data))
-
         self.send(request)
-        answer = self.recv(1024)
-        return True
-        # Todo check to good load part
 
     def change_bio_parameter(self, username, new_faceframe=None):
         if new_faceframe:
@@ -144,17 +138,18 @@ class Client:
             self.RavelPhotoFrame = new_faceframe.ravel()
         else:
             self.get_face()
-        request = ClientRequester.update_request(self.user_id, username, len(self.RavelPhotoFrame), list(self.Shape))
+        request = ClientRequester.update_request(
+            self.user_id, username, len(self.RavelPhotoFrame), list(self.Shape))
+
         self.send(request)
-        while not self.load(self.RavelPhotoFrame):
-            pass
+        self.load(self.RavelPhotoFrame)
+
         self.Answer = self.recv(1024)
-        # Todo check server answer for ACK download
 
     def delete_user(self, username):
         request = ClientRequester.delete_request(self.user_id, username)
         self.send(request)
-        self.Answer = self.recv(1024)
+        self.processing_respond(self.recv(1024))
 
     def get_answer(self):
         return self.Answer
@@ -177,3 +172,16 @@ class Client:
 
     def close(self):
         self.sock.close()
+
+    def processing_respond(self, respond):
+        answer = json.loads(respond)
+        if answer['type'] is 'Error':
+            self.Answer = colorama.Fore.RED + answer['info']
+
+        elif answer['type'] is 'Success':
+            self.Answer = colorama.Fore.GREEN + answer['info']
+
+        elif answer['type'] is 'Hello':
+            self.Answer = colorama.Fore.BLUE + \
+                          f'Session id is {answer["Your new id"]}'
+            self.user_id = answer['Your new id']

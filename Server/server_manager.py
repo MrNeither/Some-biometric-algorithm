@@ -3,10 +3,6 @@ from cryptography.fernet import Fernet
 import json, socket, random, numpy as np
 import Crypto.PublicKey.RSA as RSA
 
-# Todo Add processing of new types requests
-# Todo problem with specifying the size of the buffer to load the file. When encrypted, it increases
-# bug for some errors the server falls. To make the error handler
-
 
 def encryption_sender_decorator_maker(key):
     cipher = Fernet(key)
@@ -48,7 +44,7 @@ class ServerResponder:
 class Session:
     user_id = None
     Username = None
-    AuthSuccess = None
+    AuthSuccess = False
     Answer = None
     dbManager = None
 
@@ -60,7 +56,6 @@ class Session:
     private_key = None
 
     def __init__(self, classifier):
-        self.AuthSuccess = False
         self.dbManager = DBManager()
         self.public_key = open('PUBLIC.pem').read()
         self.private_key = open('PRIVATE.bin').read()
@@ -106,7 +101,7 @@ class Session:
             return
 
         self.Username = username
-        # Done self.PredictPhoto must contains vecotr<256> after calling CNN-method
+
         self.dbManager.add_user(username, self.PredictPhoto.tolist())
         self.Answer = ServerResponder.success("Registration success")
 
@@ -117,8 +112,7 @@ class Session:
         self.AuthSuccess = False
 
         if self.dbManager.exist(username):
-            # Todo Sasha if biometric.auth(bio_parameter,self.dbManager.get_user(name)) :
-            # review : self.dbMan return tuple => using [1] . its bad
+
             user_photo = json.loads(self.dbManager.get_user(username))
             if self.classifier.compare(
                     self.PredictPhoto, user_photo):
@@ -131,7 +125,6 @@ class Session:
         else:
             self.Answer = ServerResponder.error("User with this name not exist")
 
-    # Done new_Photo must be vector<256>
     def update_user(self, username):
         if self.AuthSuccess:
             if self.Username == username:
@@ -189,13 +182,10 @@ class Session:
         req = self.recv(data_size)
         try:
             pref_photo = np.frombuffer(req, dtype=np.uint8).reshape(shape)
-            # Todo Sasha
             self.PredictPhoto = self.classifier.predict(pref_photo)
         except Exception:
             self.Answer = ServerResponder.error("Bad Photo")
             return False
-        # Todo change send to success  and fail download
-        self.send(b'Good')
         return True
 
 

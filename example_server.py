@@ -3,7 +3,6 @@ import Crypto.PublicKey.RSA as RSA
 import threading
 import socket
 from Biometric.FaceDetection import FaceDetection
-# Done Handling multiple connections via threads.
 
 '''
 password = "MySuperSecretKey"
@@ -24,7 +23,6 @@ with open('PUBLIC.pem', 'wb') as f:
 
 
 Test_DIR = '/home/mr_neither/Work/PycharmProjects/Some-biometric-algorithm/Biometric'
-# Todo Sasha
 classifier = FaceDetection(Test_DIR)
 
 
